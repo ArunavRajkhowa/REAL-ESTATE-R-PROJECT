@@ -42,11 +42,6 @@ vis_dat(train)
 # BuildingArea : numeric :: buildup area
 # YearBuilt : numeric :: year of building 
 
-
-
-
-
-
 # Part 1 : Quiz --------------------------------
 
 # 1) Should we use Address as is in the modeling process? 
@@ -105,4 +100,49 @@ a1=ifelse(train$Type =='h',mean(train$Price,na.rm=T),ifelse())
 
 # 10) which CouncilArea has maximum variance in the price?
 # Ans: Stonnington
+  
+  
+  
+#### Part 2 starts -------------------------------------
+  test$Price=NA 
+  train$data='train' #creating placeholders
+  test$data='test'   #creating placeholders
+  
+  df=rbind(train,test)
+  glimpse(df)
+  vis_dat(df)
+
+  
+# Data Preparation
+  df = df %>% select(-Address) #dropping address
+  df$Price=as.numeric(df$Price) #treating response  column separately
+
+    dp_pipe=recipe(Price~.,data=df) %>%
+ 
+    update_role(Suburb,Type,Method,SellerG,
+                CouncilArea,new_role="to_dummies") %>% 
+
+    step_unknown(has_role("to_dummies"),new_level="__missing__") %>% 
+    step_other(has_role("to_dummies"),threshold =0.02,other="__other__") %>% 
+    step_dummy(has_role("to_dummies")) %>%
+    step_impute_median(all_numeric(),-all_outcomes())
+  
+  dp_pipe=prep(dp_pipe)
+  
+  prep_df=bake(dp_pipe,new_data=NULL)
+  #test=bake(dp_pipe,new_data=test)
+  
+vis_dat(prep_df) #all looks good!
+
+#dropping NA response rows in training set
+prep_df=prep_df[!((is.na(prep_df$Price)) & prep_df$data=='train'), ]
+
+
+#separating train and test dataset
+train=prep_df %>% filter(data=='train') %>% select(-data)
+test=prep_df %>% filter(data=='test') %>% select(-data,-Price)
+vis_dat(test)
+# Data Prep ends here
+
+
 
