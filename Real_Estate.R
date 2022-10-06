@@ -48,3 +48,61 @@ vis_dat(train)
 
 
 # Part 1 : Quiz --------------------------------
+
+# 1) Should we use Address as is in the modeling process? 
+# Ans: No table(train$Address)
+
+# 2) Find the variance of the target variable 'Price'.
+# Ans : 432958829215 var(train$Price)
+
+# 3) Find out how many observations have missing values for variable 'YearBuilt'?
+# Ans: 3717  sum(is.na(train$YearBuilt))
+
+# 4) What is the difference in average pTrice between house type h and t?
+# Ans: 0.5151274 
+if (train$Type=="h"){
+  a1=mean(train$Price,na.rm=T)
+}
+aa= 1069723
+else (train$Type =='t'){
+  a2=mean(train$Price,na.rm=T)
+}
+
+ifelse(train$Type=="h",mean(train$Price,na.rm=T),1)
+ifelse(train$Type=="t",mean(train$Price,na.rm=T),1)
+
+
+a1=ifelse(train$Type =='h',mean(train$Price,na.rm=T),ifelse())
+ a2=mean(train$Type =='t')
+ a1-a2
+
+# 5) How many unique values variable postcode takes?
+# ANs: 94 length(unique(train$Postcode))
+
+# 6) how should you treat post code . As a categorical variable or numeric variable 
+# ( write "categorical" or "numeric" as your answer)
+# Ans : categorical
+
+
+# 7) Does distance follow a normal distribution?
+# Ans: no ggplot(train,aes(x=Distance)) + geom_density()
+
+# 8) Which seller has maximum value transactions? ( Sum of Price)
+# ANs: Jellis
+# temp=train %>% 
+#       select(SellerG,Price) %>% 
+#       group_by(SellerG) %>% 
+#       
+#   summarise(max_price_sum=sum(Price)) %>% 
+#   arrange(max_price_sum,desc(max_price_sum))
+
+# 9) Which CouncilArea has maximum average price?
+# ANs: Bayside
+  temp=train %>%select(Price,CouncilArea) %>%  
+ group_by(CouncilArea) %>% mutate(meanprice= mean(Price,na.rm=T))%>%
+  arrange(CouncilArea,desc(meanprice))
+
+
+# 10) which CouncilArea has maximum variance in the price?
+# Ans: Stonnington
+
