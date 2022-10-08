@@ -150,7 +150,7 @@ vis_dat(test)
 
 #MODEL  building starts here-----------------------------------------
 
-#1st model : simple linear regression------------------------
+#### 1st model : simple linear regression------------------------
 
 
 for_vif=lm(Price~.,data=train)
@@ -185,4 +185,132 @@ plot(fit,2) # errors are normal or not
 plot(fit,3) # variance is constant or not
 
 plot(fit,4) # outliers in the data if cook's distance >1
+
+
+
+
+### Decision Tree Model------------------------------
+
+tree_model=decision_tree( 
+  cost_complexity = tune(), 
+  tree_depth = tune(),
+  min_n = tune() #min number of obs in a node
+) %>%
+  set_engine("rpart") %>% #package name rpart , show_engines("decision_tree")
+  set_mode("regression") #regression/classification
+
+
+folds = vfold_cv(train, v = 10)
+
+
+tree_grid = grid_regular(cost_complexity(), tree_depth(),   # run each ot these indvidually to get idea of range
+                         min_n(), levels = 5) #select 3 best values for each of these
+
+# below code runs your code on parallel cores of your cpu
+# makes the process faster
+# doParallel::registerDoParallel() 
+
+
+my_res=tune_grid(
+  tree_model,
+  Price~.,
+  resamples = folds,
+  grid = tree_grid,
+  metrics = metric_set(rmse,mae), #rmse ,mae for regression
+  control = control_grid(verbose = TRUE)
+)
+
+autoplot(my_res)+theme_light() #roc higher the better
+
+fold_metrics=collect_metrics(my_res) 
+
+my_res %>% show_best()
+
+final_tree_fit=tree_model %>% 
+  finalize_model(select_best(my_res)) %>% 
+  fit(Price~.,data=train)
+
+# feature importance
+library(vip)
+final_tree_fit %>%
+  vip(geom = "col", aesthetics = list(fill = "midnightblue", alpha = 0.8)) +
+  scale_y_continuous(expand = c(0, 0))
+
+# plot the tree
+
+rpart.plot(final_tree_fit$fit)
+
+# predictions
+
+train_pred=predict(final_tree_fit,new_data = train) 
+test_pred=predict(final_tree_fit,new_data = test) 
+write.csv(test_pred,'Decision Tree.csv',row.names = F)
+
+#ggplot(train,aes(x=energy))+geom_density()
+#ggplot(test_pred,aes(x=.pred))+geom_density()
+
+plot(density(test_pred$.pred))
+lines(density(train$Price))
+
+
+
+
+### Random Forest ------------------------------------
+
+
+rf_model = rand_forest(
+  mtry = tune(),
+  trees = tune(),
+  min_n = tune()
+) %>%
+  set_mode("regression") %>%
+  set_engine("ranger")
+
+folds = vfold_cv(train, v = 10)
+
+rf_grid = grid_regular(mtry(c(5,25)), trees(c(100,500)),
+                       min_n(c(2,10)),levels = 5)
+
+
+my_res=tune_grid(
+  rf_model,
+  Price~.,
+  resamples = folds,
+  grid = rf_grid,
+  metrics = metric_set(rmse,mae),
+  control = control_grid(verbose = TRUE)
+)
+
+autoplot(my_res)+theme_light()
+
+fold_metrics=collect_metrics(my_res)
+
+my_res %>% show_best()
+
+final_rf_fit=rf_model %>% 
+  set_engine("ranger",importance='permutation') %>% 
+  finalize_model(select_best(my_res,"rmse")) %>% 
+  fit(Price~.,data=train)
+
+# variable importance 
+
+final_rf_fit %>%
+  vip(geom = "col", aesthetics = list(fill = "midnightblue", alpha = 0.8)) +
+  scale_y_continuous(expand = c(0, 0))
+
+# predicitons
+
+train_pred=predict(final_rf_fit,new_data = train) 
+test_pred=predict(final_rf_fit,new_data = test) 
+write.csv(test_pred,'RandomForest.csv',row.names = F)
+
+plot(density(test_pred$.pred))
+lines(density(train$Price))
+
+
+
+
+
+
+
 
